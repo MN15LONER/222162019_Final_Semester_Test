@@ -16,5 +16,6 @@ in# TODO List
 - [x] Simplify or adapt the details section if necessary
 - [x] Integrate SerpApi reviews into HotelDetailScreen
 - [x] Add check_in_date and check_out_date to SerpApi request to fix 400 error
+- [x] Update SerpApi request to use property_token instead of data_id and add q parameter
 - [ ] Test the updated hotel details loading
 - [ ] Ensure booking flow and reviews remain functional

@@ -40,7 +40,8 @@ export default function HotelDetailScreen({ route, navigation }) {
       const response = await axios.get('https://serpapi.com/search', {
         params: {
           engine: 'google_hotels',
-          data_id: hotel.property_token,
+          q: 'Bali Resorts',
+          property_token: hotel.property_token,
           check_in_date: arrival_date,
           check_out_date: departure_date,
           api_key: '07e304de5fc10e010f15c7e4b9723542221b8c485c0e792f70b3fa0cc42f3d67'
