@@ -15,6 +15,13 @@ export function UserProvider({ children }) {
   const [reviews, setReviews] = useState([]);
   const [onboardingCompleted, setOnboardingCompleted] = useState(false);
   const [selectedCurrency, setSelectedCurrency] = useState({ code: 'ZAR', name: 'South African Rand', symbol: 'R' });
+  const currencies = [
+    { code: 'ZAR', name: 'South African Rand', symbol: 'R' },
+    { code: 'USD', name: 'US Dollar', symbol: '$' },
+    { code: 'EUR', name: 'Euro', symbol: '€' },
+    { code: 'GBP', name: 'British Pound', symbol: '£' },
+    { code: 'JPY', name: 'Japanese Yen', symbol: '¥' },
+  ];
 
   const persistLocal = async (items) => {
     try {
@@ -44,7 +51,6 @@ export function UserProvider({ children }) {
     }
   };
 
-  // Onboarding functions
   const checkOnboarding = async () => {
     try {
       const value = await AsyncStorage.getItem('@onboarding_completed');
@@ -63,7 +69,6 @@ export function UserProvider({ children }) {
     }
   };
 
-  // User profile functions
   const createUserProfile = async (uid, name, email) => {
     try {
       const userDoc = doc(db, 'users', uid);
@@ -82,7 +87,6 @@ export function UserProvider({ children }) {
     }
   };
 
-  // Bookings functions
   const addBooking = async (booking) => {
     if (!user) return;
     try {
@@ -93,7 +97,6 @@ export function UserProvider({ children }) {
     }
   };
 
-  // Reviews functions
   const addReview = async (hotelId, review) => {
     if (!user) return;
     try {
@@ -244,6 +247,7 @@ export function UserProvider({ children }) {
         onboardingCompleted,
         selectedCurrency,
         setSelectedCurrency,
+        currencies,
         addToCart,
         setItemQuantity,
         removeItem,

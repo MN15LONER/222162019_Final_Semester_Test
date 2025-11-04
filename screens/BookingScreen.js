@@ -38,7 +38,7 @@ export default function BookingScreen({ route, navigation }) {
     };
     await addBooking(booking);
     Alert.alert('Success', 'Booking confirmed!', [
-      { text: 'OK', onPress: () => navigation.navigate('Profile') },
+      { text: 'OK', onPress: () => navigation.navigate('Main', { screen: 'Profile' }) },
     ]);
   };
 
@@ -100,6 +100,7 @@ export default function BookingScreen({ route, navigation }) {
       <DateTimePickerModal
         isVisible={showCheckInPicker}
         mode="date"
+        date={checkInDate}
         onConfirm={(date) => {
           setCheckInDate(date);
           setShowCheckInPicker(false);
@@ -111,12 +112,13 @@ export default function BookingScreen({ route, navigation }) {
       <DateTimePickerModal
         isVisible={showCheckOutPicker}
         mode="date"
+        date={checkOutDate}
         onConfirm={(date) => {
           setCheckOutDate(date);
           setShowCheckOutPicker(false);
         }}
         onCancel={() => setShowCheckOutPicker(false)}
-        minimumDate={checkInDate}
+        minimumDate={checkInDate || new Date()}
       />
     </ScrollView>
   );
