@@ -20,7 +20,7 @@ export default function BookingScreen({ route, navigation }) {
   const [showCheckOutPicker, setShowCheckOutPicker] = useState(false);
 
   const nights = checkInDate && checkOutDate ? Math.ceil((checkOutDate - checkInDate) / (1000 * 60 * 60 * 24)) : 1;
-  const pricePerNight = parseFloat(hotel.price.toString().replace('$', '')) || 0;
+  const pricePerNight = parseFloat(hotel.price.toString().replace(/[^\d.]/g, '')) || 0;
   const totalPrice = pricePerNight * rooms * Math.max(nights, 1);
 
   const handleConfirmBooking = async () => {
