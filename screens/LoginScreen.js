@@ -10,6 +10,7 @@ export default function LoginScreen({ navigation }) {
     if (!email) {
       Alert.alert('Error', 'Please enter your email');
       return false;
+      //If email is empty, show alert
     }
     if (!password) {
       Alert.alert('Error', 'Please enter your password');
