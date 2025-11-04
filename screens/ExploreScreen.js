@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  TextInput,
 } from 'react-native';
 import axios from 'axios';
 import { useUser } from '../context/userContext';
@@ -17,59 +18,59 @@ export default function ExploreScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [sortBy, setSortBy] = useState('price'); // 'price' or 'rating'
-  const { user, logout } = useUser();
+  const [searchQuery, setSearchQuery] = useState('');
 
-  const fetchHotels = async (city = 'mumbai') => {
+  const { user, logout } = useUser();
+  const timeoutRef = useRef(null);
+
+  // Define check-in and check-out dates at component level (future dates for API compatibility)
+  const futureCheckin = new Date();
+  futureCheckin.setDate(futureCheckin.getDate() + 30); // 30 days from now
+  const futureCheckout = new Date(futureCheckin);
+  futureCheckout.setDate(futureCheckin.getDate() + 1); // Next day
+  const checkinDate = futureCheckin.toISOString().split('T')[0];
+  const checkoutDate = futureCheckout.toISOString().split('T')[0];
+
+  // fetchDestinations removed as SerpApi doesn't have separate destination API
+
+  const fetchHotels = async (query = 'Cape Town') => {
     try {
       setLoading(true);
 
-      // Get today's date and tomorrow's date for check-in/out
-      const today = new Date();
-      const tomorrow = new Date(today);
-      tomorrow.setDate(today.getDate() + 1);
-
-      const checkinDate = today.toISOString().split('T')[0];
-      const checkoutDate = tomorrow.toISOString().split('T')[0];
-
-      // Use RapidAPI for hotel search
-      const response = await axios.get('https://booking-com18.p.rapidapi.com/stays/search', {
+      // Use SerpApi for hotel search
+      const response = await axios.get('https://serpapi.com/search.json', {
         params: {
-          dest_id: '-2092174', // Mumbai dest_id
-          search_type: 'CITY',
-          arrival_date: checkinDate,
-          departure_date: checkoutDate,
-          adults: '1',
-          room_qty: '1',
-          page_number: '1',
-          units: 'metric',
-          temperature_unit: 'c',
-          languagecode: 'en-us',
-          currency_code: 'INR'
-        },
-        headers: {
-          'X-RapidAPI-Key': 'ae245928dcmshe21e654ab68e750p1233c5jsn2eff680f21d8',
-          'X-RapidAPI-Host': 'booking-com18.p.rapidapi.com'
+          engine: 'google_hotels',
+          q: query,
+          check_in_date: checkinDate,
+          check_out_date: checkoutDate,
+          currency: 'ZAR',
+          api_key: '07e304de5fc10e010f15c7e4b9723542221b8c485c0e792f70b3fa0cc42f3d67'
         }
       });
 
-      if (response.data.status && response.data.data?.hotels) {
-        const hotelData = response.data.data.hotels.slice(0, 10).map((hotel, index) => ({
-          id: hotel.id.toString(),
-          name: hotel.name,
-          location: hotel.wishlistName || city,
-          price: hotel.priceBreakdown?.grossPrice?.value || 5000,
-          rating: hotel.property?.reviewScore || Math.floor(Math.random() * 5) + 1,
-          image: hotel.photoUrls?.[0] || `https://picsum.photos/300/200?random=${index}`,
-          reviewCount: hotel.property?.reviewCount || 0,
-          reviewScoreWord: hotel.property?.reviewScoreWord || '',
-          latitude: hotel.latitude,
-          longitude: hotel.longitude,
-          checkin: hotel.checkin,
-          checkout: hotel.checkout
+      console.log('API Response:', response.data); // Debug log
+      if (response.data.properties && Array.isArray(response.data.properties)) {
+        const hotelData = response.data.properties.slice(0, 10).map((property, index) => ({
+          id: property.property_token || property.id || index.toString(),
+          name: property.name || 'Hotel ' + index,
+          location: property.location || query,
+          price: property.rate_per_night?.lowest || property.price || 5000,
+          rating: property.overall_rating || Math.floor(Math.random() * 5) + 1,
+          image: property.images?.[0]?.original_image || `https://picsum.photos/300/200?random=${index}`,
+          reviewCount: property.reviews || 0,
+          reviewScoreWord: property.overall_rating ? `${property.overall_rating}/5` : '',
+          latitude: property.gps_coordinates?.latitude,
+          longitude: property.gps_coordinates?.longitude,
+          checkin: property.check_in_time,
+          checkout: property.check_out_time,
+          property_token: property.property_token
         }));
+        console.log('Processed hotels:', hotelData.length);
         setHotels(hotelData);
         setError(null);
       } else {
+        console.log('Response structure:', response.data);
         throw new Error('Invalid API response');
       }
     } catch (err) {
@@ -85,6 +86,20 @@ export default function ExploreScreen({ navigation }) {
     fetchHotels();
   }, []);
 
+  const handleSearchChange = (text) => {
+    setSearchQuery(text);
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    timeoutRef.current = setTimeout(() => {
+      if (text.trim()) {
+        fetchHotels(text);
+      }
+    }, 500); // 500ms delay
+  };
+
+
+
   const sortedHotels = [...hotels].sort((a, b) => {
     if (sortBy === 'price') return a.price - b.price;
     return b.rating - a.rating;
@@ -93,7 +108,7 @@ export default function ExploreScreen({ navigation }) {
   const renderHotelCard = ({ item }) => (
     <TouchableOpacity
       style={styles.card}
-      onPress={() => navigation.navigate('HotelDetail', { hotel: item })}
+      onPress={() => navigation.navigate('HotelDetail', { hotel: item, arrival_date: checkinDate, departure_date: checkoutDate })}
     >
       <Image source={{ uri: item.image }} style={styles.image} />
       <View style={styles.cardContent}>
@@ -135,6 +150,13 @@ export default function ExploreScreen({ navigation }) {
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Explore Hotels</Text>
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search destinations..."
+          value={searchQuery}
+          onChangeText={handleSearchChange}
+        />
+
         <View style={styles.sortContainer}>
           <TouchableOpacity
             style={[styles.sortButton, sortBy === 'price' && styles.activeSort]}
@@ -169,6 +191,8 @@ const styles = StyleSheet.create({
   retryText: { color: 'white', fontWeight: 'bold' },
   header: { padding: 20, borderBottomWidth: 1, borderColor: '#eee' },
   headerTitle: { fontSize: 24, fontWeight: 'bold', marginBottom: 10 },
+  searchInput: { borderWidth: 1, borderColor: '#ddd', padding: 10, borderRadius: 5, marginBottom: 10 },
+
   sortContainer: { flexDirection: 'row' },
   sortButton: { padding: 8, marginRight: 10, borderRadius: 5, backgroundColor: '#f0f0f0' },
   activeSort: { backgroundColor: '#007AFF' },

@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState, useCallback } fr
 import { onAuthStateChanged, signOut } from '../firebase';
 import { collection, doc, setDoc, getDoc, updateDoc, onSnapshot, addDoc, query, where, getDocs } from 'firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
 import { auth, db } from '../firebase';
 
 const UserContext = createContext();
@@ -13,6 +14,7 @@ export function UserProvider({ children }) {
   const [bookings, setBookings] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [onboardingCompleted, setOnboardingCompleted] = useState(false);
+  const [selectedCurrency, setSelectedCurrency] = useState({ code: 'ZAR', name: 'South African Rand', symbol: 'R' });
 
   const persistLocal = async (items) => {
     try {
@@ -101,6 +103,8 @@ export function UserProvider({ children }) {
       console.warn('Failed to add review', err);
     }
   };
+
+
 
   const addToCart = async (product, qty = 1) => {
     const existing = cart.find((c) => c.id === product.id);
@@ -238,6 +242,8 @@ export function UserProvider({ children }) {
         bookings,
         reviews,
         onboardingCompleted,
+        selectedCurrency,
+        setSelectedCurrency,
         addToCart,
         setItemQuantity,
         removeItem,

@@ -10,22 +10,70 @@ import {
   Modal,
   TextInput,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
+import axios from 'axios';
 import { useUser } from '../context/userContext';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
 
 export default function HotelDetailScreen({ route, navigation }) {
-  const { hotel } = route.params;
+  const { hotel, arrival_date, departure_date } = route.params;
   const { user, addReview } = useUser();
   const [reviews, setReviews] = useState([]);
+  const [serpapiReviews, setSerpapiReviews] = useState([]);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [reviewText, setReviewText] = useState('');
   const [reviewRating, setReviewRating] = useState(5);
+  const [detailedHotel, setDetailedHotel] = useState(null);
+  const [loadingDetails, setLoadingDetails] = useState(true);
+  const [detailsError, setDetailsError] = useState(null);
 
   useEffect(() => {
     fetchReviews();
-  }, [hotel.id]);
+    fetchHotelDetails();
+  }, [hotel.id, arrival_date, departure_date]);
+
+  const fetchHotelDetails = async () => {
+    try {
+      setLoadingDetails(true);
+      const response = await axios.get('https://serpapi.com/search', {
+        params: {
+          engine: 'google_hotels',
+          data_id: hotel.property_token,
+          check_in_date: arrival_date,
+          check_out_date: departure_date,
+          api_key: '07e304de5fc10e010f15c7e4b9723542221b8c485c0e792f70b3fa0cc42f3d67'
+        }
+      });
+      console.log('Hotel Details API Response:', response.data);
+      if (response.data) {
+        setDetailedHotel(response.data);
+        // Extract SerpApi reviews if available
+        if (response.data.reviews && Array.isArray(response.data.reviews)) {
+          const apiReviews = response.data.reviews.map((review, index) => ({
+            id: `api-${index}`,
+            userId: review.author || 'Anonymous',
+            rating: review.rating || 5,
+            text: review.snippet || review.text || 'No review text available.',
+            date: review.date || 'N/A'
+          }));
+          setSerpapiReviews(apiReviews);
+        }
+        setDetailsError(null);
+      } else {
+        console.log('API Response structure:', response.data);
+        // Handle API error gracefully - show error but don't crash
+        setDetailsError('Hotel details not available. Please try again later.');
+        return;
+      }
+    } catch (err) {
+      console.warn('Hotel Details API Error:', err);
+      setDetailsError('Failed to load hotel details');
+    } finally {
+      setLoadingDetails(false);
+    }
+  };
 
   const fetchReviews = async () => {
     try {
@@ -100,14 +148,59 @@ export default function HotelDetailScreen({ route, navigation }) {
           ))}
         </View>
         <Text style={styles.price}>${hotel.price}/night</Text>
+
+        {loadingDetails ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="small" />
+            <Text>Loading hotel details...</Text>
+          </View>
+        ) : detailsError ? (
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorText}>{detailsError}</Text>
+            <TouchableOpacity style={styles.retryButton} onPress={fetchHotelDetails}>
+              <Text style={styles.retryText}>Retry</Text>
+            </TouchableOpacity>
+          </View>
+        ) : detailedHotel ? (
+          <View style={styles.detailsSection}>
+            <Text style={styles.sectionTitle}>Hotel Details</Text>
+            <Text style={styles.detailText}>Address: {detailedHotel.address || detailedHotel.location || 'N/A'}</Text>
+            <Text style={styles.detailText}>City: {detailedHotel.city || 'N/A'}</Text>
+            <Text style={styles.detailText}>Country: {detailedHotel.country || detailedHotel.country_trans || 'N/A'}</Text>
+            <Text style={styles.detailText}>Available Rooms: {detailedHotel.available_rooms || 'N/A'}</Text>
+            <Text style={styles.detailText}>Review Count: {detailedHotel.reviews || detailedHotel.review_nr || 'N/A'}</Text>
+            <Text style={styles.detailText}>Check-in Time: {detailedHotel.check_in_time || 'N/A'}</Text>
+            <Text style={styles.detailText}>Check-out Time: {detailedHotel.check_out_time || 'N/A'}</Text>
+            {(detailedHotel.amenities || detailedHotel.family_facilities) && (
+              <View style={styles.facilitiesSection}>
+                <Text style={styles.facilityTitle}>Facilities:</Text>
+                {(detailedHotel.amenities || detailedHotel.family_facilities).map((facility, index) => (
+                  <Text key={index} style={styles.facilityText}>• {facility}</Text>
+                ))}
+              </View>
+            )}
+            {(detailedHotel.price_breakdown || detailedHotel.product_price_breakdown) && (
+              <View style={styles.priceBreakdownSection}>
+                <Text style={styles.priceBreakdownTitle}>Price Breakdown:</Text>
+                <Text style={styles.priceBreakdownText}>
+                  Gross Amount: {(detailedHotel.price_breakdown || detailedHotel.product_price_breakdown).gross_amount?.value || 'N/A'} {(detailedHotel.price_breakdown || detailedHotel.product_price_breakdown).gross_amount?.currency || 'EUR'}
+                </Text>
+                <Text style={styles.priceBreakdownText}>
+                  Net Amount: {(detailedHotel.price_breakdown || detailedHotel.product_price_breakdown).net_amount?.value || 'N/A'} {(detailedHotel.price_breakdown || detailedHotel.product_price_breakdown).net_amount?.currency || 'EUR'}
+                </Text>
+              </View>
+            )}
+          </View>
+        ) : null}
+
         <TouchableOpacity style={styles.bookButton} onPress={handleBookNow}>
           <Text style={styles.bookButtonText}>Book Now</Text>
         </TouchableOpacity>
 
         <View style={styles.reviewsSection}>
-          <Text style={styles.sectionTitle}>Reviews</Text>
+          <Text style={styles.sectionTitle}>User Reviews</Text>
           {reviews.length === 0 ? (
-            <Text style={styles.noReviews}>No reviews yet.</Text>
+            <Text style={styles.noReviews}>No user reviews yet.</Text>
           ) : (
             <FlatList
               data={reviews}
@@ -125,6 +218,18 @@ export default function HotelDetailScreen({ route, navigation }) {
             </TouchableOpacity>
           )}
         </View>
+
+        {serpapiReviews.length > 0 && (
+          <View style={styles.reviewsSection}>
+            <Text style={styles.sectionTitle}>SerpApi Reviews</Text>
+            <FlatList
+              data={serpapiReviews}
+              renderItem={renderReview}
+              keyExtractor={(item) => item.id}
+              scrollEnabled={false}
+            />
+          </View>
+        )}
       </View>
 
       <Modal visible={showReviewModal} animationType="slide" transparent>
@@ -200,4 +305,17 @@ const styles = StyleSheet.create({
   cancelText: { color: 'white', fontWeight: 'bold' },
   submitButton: { backgroundColor: '#007AFF', padding: 10, borderRadius: 5, flex: 1, alignItems: 'center' },
   submitText: { color: 'white', fontWeight: 'bold' },
+  loadingContainer: { alignItems: 'center', marginVertical: 20 },
+  errorContainer: { alignItems: 'center', marginVertical: 20 },
+  errorText: { color: 'red', fontSize: 16, marginBottom: 10 },
+  retryButton: { backgroundColor: '#007AFF', padding: 10, borderRadius: 5 },
+  retryText: { color: 'white', fontWeight: 'bold' },
+  detailsSection: { marginVertical: 20 },
+  detailText: { fontSize: 16, marginBottom: 5 },
+  facilitiesSection: { marginTop: 10 },
+  facilityTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 5 },
+  facilityText: { fontSize: 14, marginBottom: 2 },
+  priceBreakdownSection: { marginTop: 10 },
+  priceBreakdownTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 5 },
+  priceBreakdownText: { fontSize: 14, marginBottom: 2 },
 });

@@ -1,46 +1,20 @@
-# Hotel Booking App Development TODO
+in# TODO List
 
-## Step 1: Firebase Setup (B1)
-- [x] Update firebase.js to use the provided Firebase config (from task).
-- [x] Initialize Firestore instead of Realtime DB.
-- [x] Ensure collections: users, bookings, reviews are set up (via code).
-
-## Step 2: Dependencies
-- [x] Update package.json to add: @react-navigation/bottom-tabs, react-native-modal-datetime-picker.
-- [x] Install the new dependencies using npm install.
-
-## Step 3: Context Update
-- [x] Extend context/userContext.js to include:
-  - [x] Onboarding flag (AsyncStorage).
-  - [x] Bookings state and Firestore operations.
-  - [x] Reviews state and Firestore operations.
-  - [x] Update user profile functions.
-
-## Step 4: New Screens Creation
-- [x] Create OnboardingScreen.js: Multi-screen flow with images from assets, AsyncStorage flag.
-- [x] Create ExploreScreen.js: Hotel listings from API, FlatList with cards (image, name, location, rating, price), sorting/filtering.
-- [x] Create HotelDetailScreen.js: Details, Book Now button, Reviews section with add review modal.
-- [x] Create BookingScreen.js: Date pickers, room selection, cost calculation, confirmation, store in Firestore.
-- [x] Create ProfileScreen.js: User info, edit profile, bookings list, logout.
-- [x] Update LoginScreen.js: Add forgot password, better validation.
-- [x] Update RegisterScreen.js: Better validation.
-
-## Step 5: Navigation Update
-- [x] Update App.js: Use Stack for auth/onboarding, Bottom Tabs for main app (Explore, Profile).
-- [x] Ensure conditional rendering based on auth and onboarding state.
-
-## Step 6: API Integration (B4)
-- [x] Implement fetching hotels from RapidAPI Booking.com in ExploreScreen.
-- [x] Handle loading, error states, update UI with fetched data.
-
-## Step 7: Firestore Integration (B3)
-- [x] Implement storing user profiles on sign-up.
-- [x] Store bookings and reviews in Firestore with real-time listeners.
-- [x] Fetch and display bookings/reviews in Profile/HotelDetail.
-
-## Step 8: Testing and Final Touches
-- Test auth flow with Firestore.
-- Test API fetching and UI rendering.
-- Test booking and review submissions.
-- Ensure responsive design, error handling, no crashes on auth changes.
-- Verify all requirements from A1-A6, B1-B4 are met.
+- [x] Update ExploreScreen to use SerpApi for hotel search
+- [x] Integrate search directly in ExploreScreen
+- [x] Remove destination suggestions
+- [x] Add debouncing to search input
+- [x] Implement HotelDetailScreen with hotel info from route params
+- [x] Fetch additional details using RapidAPI in HotelDetailScreen
+- [x] Add booking flow navigation to BookingScreen
+- [x] Implement reviews functionality with Firebase
+- [x] Handle booking flow in BookingScreen: select dates, rooms, display price, confirm without payment
+- [x] Fetch reviews from Firebase
+- [x] Allow users to add reviews if logged in
+- [x] Update fetchHotelDetails in HotelDetailScreen.js to use SerpApi's google_hotels engine with data_id = hotel.property_token
+- [x] Adjust response parsing for SerpApi structure
+- [x] Simplify or adapt the details section if necessary
+- [x] Integrate SerpApi reviews into HotelDetailScreen
+- [x] Add check_in_date and check_out_date to SerpApi request to fix 400 error
+- [ ] Test the updated hotel details loading
+- [ ] Ensure booking flow and reviews remain functional

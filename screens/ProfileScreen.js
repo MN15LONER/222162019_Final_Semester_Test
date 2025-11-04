@@ -8,11 +8,12 @@ import {
   Alert,
   Modal,
   TextInput,
+  Picker,
 } from 'react-native';
 import { useUser } from '../context/userContext';
 
 export default function ProfileScreen({ navigation }) {
-  const { user, bookings, reviews, updateUserProfile, logout } = useUser();
+  const { user, bookings, reviews, updateUserProfile, logout, currencies, selectedCurrency, setSelectedCurrency } = useUser();
   const [showEditModal, setShowEditModal] = useState(false);
   const [name, setName] = useState(user?.displayName || '');
   const [email, setEmail] = useState(user?.email || '');
@@ -66,6 +67,19 @@ export default function ProfileScreen({ navigation }) {
         <Text style={styles.infoValue}>{user?.displayName || 'Not set'}</Text>
         <Text style={styles.infoLabel}>Email:</Text>
         <Text style={styles.infoValue}>{user?.email}</Text>
+        <Text style={styles.infoLabel}>Currency:</Text>
+        <Picker
+          selectedValue={selectedCurrency.code}
+          style={styles.picker}
+          onValueChange={(itemValue) => {
+            const currency = currencies.find(c => c.code === itemValue);
+            if (currency) setSelectedCurrency(currency);
+          }}
+        >
+          {currencies.map((currency) => (
+            <Picker.Item key={currency.code} label={`${currency.name} (${currency.symbol})`} value={currency.code} />
+          ))}
+        </Picker>
       </View>
 
       <View style={styles.section}>
@@ -169,4 +183,5 @@ const styles = StyleSheet.create({
   cancelText: { color: 'white', fontWeight: 'bold' },
   saveButton: { backgroundColor: '#007AFF', padding: 10, borderRadius: 5, flex: 1, alignItems: 'center' },
   saveText: { color: 'white', fontWeight: 'bold' },
+  picker: { height: 50, width: '100%', marginBottom: 10 },
 });
