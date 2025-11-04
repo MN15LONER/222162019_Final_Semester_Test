@@ -120,7 +120,7 @@ export default function HotelDetailScreen({ route, navigation }) {
   const renderReview = ({ item }) => (
     <View style={styles.reviewItem}>
       <View style={styles.reviewHeader}>
-        <Text style={styles.reviewUser}>{item.userId}</Text>
+        <Text style={styles.reviewUser}>{item.userName || item.userId}</Text>
         <View style={styles.ratingContainer}>
           {[...Array(5)].map((_, i) => (
             <Text key={i} style={i < item.rating ? styles.starFilled : styles.starEmpty}>

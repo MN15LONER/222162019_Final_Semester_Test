@@ -56,9 +56,14 @@ export default function ProfileScreen({ navigation }) {
     <View style={styles.container}>
       <View style={styles.profileHeader}>
         <Text style={styles.profileTitle}>Profile</Text>
-        <TouchableOpacity style={styles.editButton} onPress={() => setShowEditModal(true)}>
-          <Text style={styles.editText}>Edit</Text>
-        </TouchableOpacity>
+        <View style={styles.headerButtons}>
+          <TouchableOpacity style={styles.editButton} onPress={() => setShowEditModal(true)}>
+            <Text style={styles.editText}>Edit</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.logoutButtonTop} onPress={logout}>
+            <Text style={styles.logoutTextTop}>Logout</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <View style={styles.profileInfo}>
@@ -141,8 +146,11 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: 'white', padding: 20 },
   profileHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
   profileTitle: { fontSize: 24, fontWeight: 'bold' },
+  headerButtons: { flexDirection: 'row', gap: 10 },
   editButton: { backgroundColor: '#007AFF', padding: 8, borderRadius: 5 },
   editText: { color: 'white', fontWeight: 'bold' },
+  logoutButtonTop: { backgroundColor: '#dc3545', padding: 8, borderRadius: 5 },
+  logoutTextTop: { color: 'white', fontWeight: 'bold' },
   profileInfo: { marginBottom: 20 },
   infoLabel: { fontSize: 16, fontWeight: 'bold', marginBottom: 5 },
   infoValue: { fontSize: 16, marginBottom: 10 },

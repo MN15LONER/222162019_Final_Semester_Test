@@ -20,7 +20,8 @@ export default function BookingScreen({ route, navigation }) {
   const [showCheckOutPicker, setShowCheckOutPicker] = useState(false);
 
   const nights = checkInDate && checkOutDate ? Math.ceil((checkOutDate - checkInDate) / (1000 * 60 * 60 * 24)) : 1;
-  const totalPrice = hotel.price * rooms * Math.max(nights, 1);
+  const pricePerNight = parseFloat(hotel.price.toString().replace('$', '')) || 0;
+  const totalPrice = pricePerNight * rooms * Math.max(nights, 1);
 
   const handleConfirmBooking = async () => {
     if (nights <= 0) {
@@ -88,8 +89,12 @@ export default function BookingScreen({ route, navigation }) {
       <View style={styles.summary}>
         <Text style={styles.summaryTitle}>Booking Summary</Text>
         <Text>Hotel: {hotel.name}</Text>
+        <Text>Price per night: ${hotel.price}</Text>
         <Text>Nights: {Math.max(nights, 1)}</Text>
         <Text>Rooms: {rooms}</Text>
+        <Text style={styles.priceBreakdown}>
+          ${hotel.price} × {Math.max(nights, 1)} nights × {rooms} rooms
+        </Text>
         <Text style={styles.totalPrice}>Total: ${totalPrice.toFixed(2)}</Text>
       </View>
 
@@ -137,6 +142,7 @@ const styles = StyleSheet.create({
   roomCount: { fontSize: 18, fontWeight: 'bold' },
   summary: { backgroundColor: '#f9f9f9', padding: 20, borderRadius: 8, marginBottom: 20 },
   summaryTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 10 },
+  priceBreakdown: { fontSize: 14, color: '#666', marginTop: 5 },
   totalPrice: { fontSize: 20, fontWeight: 'bold', color: '#007AFF', marginTop: 10 },
   confirmButton: { backgroundColor: '#28a745', padding: 15, borderRadius: 8, alignItems: 'center' },
   confirmText: { color: 'white', fontSize: 18, fontWeight: 'bold' },

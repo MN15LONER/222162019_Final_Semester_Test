@@ -82,6 +82,9 @@ export function UserProvider({ children }) {
     try {
       const userDoc = doc(db, 'users', uid);
       await updateDoc(userDoc, updates);
+      if (updates.displayName) {
+        setUser(prev => prev ? { ...prev, displayName: updates.displayName } : null);
+      }
     } catch (err) {
       console.warn('Failed to update user profile', err);
     }
@@ -101,7 +104,7 @@ export function UserProvider({ children }) {
     if (!user) return;
     try {
       const reviewsCol = collection(db, 'reviews');
-      await addDoc(reviewsCol, { hotelId, ...review, userId: user.uid, createdAt: new Date() });
+      await addDoc(reviewsCol, { hotelId, ...review, userId: user.uid, userName: user.displayName || 'Anonymous', createdAt: new Date() });
     } catch (err) {
       console.warn('Failed to add review', err);
     }
