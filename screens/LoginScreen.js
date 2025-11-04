@@ -20,6 +20,7 @@ export default function LoginScreen({ navigation }) {
     if (!email.includes('@')) {
       Alert.alert('Error', 'Please enter a valid email address');
       return false;
+      //If email does not contain '@', show alert
     }
     return true;
   };
