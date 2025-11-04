@@ -1,32 +1,55 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { createUserWithEmailAndPassword } from '../firebase';
+import { useUser } from '../context/userContext';
 
 export default function RegisterScreen({ navigation }) {
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const { createUserProfile } = useUser();
 
-  const validate = () => {
-    if (!email || !password) {
-      Alert.alert('Error', 'Email and password are required');
+  const validateForm = () => {
+    if (!name) {
+      Alert.alert('Error', 'Please enter your name');
+      return false;
+    }
+    if (!email) {
+      Alert.alert('Error', 'Please enter your email');
+      return false;
+    }
+    if (!password) {
+      Alert.alert('Error', 'Please enter your password');
+      return false;
+    }
+    if (!confirmPassword) {
+      Alert.alert('Error', 'Please confirm your password');
       return false;
     }
     if (!email.includes('@')) {
-      Alert.alert('Error', 'Enter a valid email');
+      Alert.alert('Error', 'Please enter a valid email address');
       return false;
     }
     if (password.length < 6) {
       Alert.alert('Error', 'Password must be at least 6 characters');
       return false;
     }
+    if (password !== confirmPassword) {
+      Alert.alert('Error', 'Passwords do not match');
+      return false;
+    }
     return true;
   };
 
   const handleRegister = async () => {
-    if (!validate()) return;
+    if (!validateForm()) return;
     try {
-      await createUserWithEmailAndPassword(email, password);
-      Alert.alert('Success', 'Account created');
+      const userCredential = await createUserWithEmailAndPassword(email, password);
+      // Create user profile in Firestore
+      await createUserProfile(userCredential.user.uid, name, email);
+      Alert.alert('Success', 'Account created successfully!');
+      navigation.navigate('Login');
     } catch (err) {
       Alert.alert('Registration Error', err.message);
     }
@@ -35,13 +58,21 @@ export default function RegisterScreen({ navigation }) {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Register</Text>
-      <TextInput style={styles.input} placeholder="Email" value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" />
+
+      <TextInput style={styles.input} placeholder="Name" value={name} onChangeText={setName} />
+
+      <TextInput style={styles.input} placeholder="Email" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
+
       <TextInput style={styles.input} placeholder="Password" value={password} onChangeText={setPassword} secureTextEntry />
+
+      <TextInput style={styles.input} placeholder="Confirm Password" value={confirmPassword} onChangeText={setConfirmPassword} secureTextEntry />
+
       <TouchableOpacity style={styles.button} onPress={handleRegister}>
-        <Text style={styles.buttonText}>Create Account</Text>
+        <Text style={styles.buttonText}>Register</Text>
       </TouchableOpacity>
-      <TouchableOpacity onPress={() => navigation.navigate('Login')} style={{ marginTop: 12 }}>
-        <Text style={{ color: 'blue' }}>Have an account? Login</Text>
+
+      <TouchableOpacity style={{ marginTop: 12 }} onPress={() => navigation.navigate('Login')}>
+        <Text style={{ color: 'blue', textAlign: 'center' }}>Already have an account? Login</Text>
       </TouchableOpacity>
     </View>
   );

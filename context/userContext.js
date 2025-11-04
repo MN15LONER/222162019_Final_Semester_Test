@@ -1,8 +1,8 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { onAuthStateChanged, signOut } from '../firebase';
-import { ref, onValue, set, update, remove } from 'firebase/database';
+import { collection, doc, setDoc, getDoc, updateDoc, onSnapshot, addDoc, query, where, getDocs } from 'firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { auth, database } from '../firebase';
+import { auth, db } from '../firebase';
 
 const UserContext = createContext();
 
@@ -10,6 +10,9 @@ export function UserProvider({ children }) {
   const [user, setUser] = useState(null);
   const [initializing, setInitializing] = useState(true);
   const [cart, setCart] = useState([]);
+  const [bookings, setBookings] = useState([]);
+  const [reviews, setReviews] = useState([]);
+  const [onboardingCompleted, setOnboardingCompleted] = useState(false);
 
   const persistLocal = async (items) => {
     try {
@@ -32,9 +35,70 @@ export function UserProvider({ children }) {
   const writeCartToDB = async (uid, items) => {
     if (!uid) return;
     try {
-      await set(ref(database, `carts/${uid}`), items);
+      const cartDoc = doc(db, 'carts', uid);
+      await setDoc(cartDoc, { items });
     } catch (err) {
       console.warn('DB write failed', err);
+    }
+  };
+
+  // Onboarding functions
+  const checkOnboarding = async () => {
+    try {
+      const value = await AsyncStorage.getItem('@onboarding_completed');
+      setOnboardingCompleted(value === 'true');
+    } catch (err) {
+      console.warn('Failed to check onboarding', err);
+    }
+  };
+
+  const completeOnboarding = async () => {
+    try {
+      await AsyncStorage.setItem('@onboarding_completed', 'true');
+      setOnboardingCompleted(true);
+    } catch (err) {
+      console.warn('Failed to complete onboarding', err);
+    }
+  };
+
+  // User profile functions
+  const createUserProfile = async (uid, name, email) => {
+    try {
+      const userDoc = doc(db, 'users', uid);
+      await setDoc(userDoc, { name, email, createdAt: new Date() });
+    } catch (err) {
+      console.warn('Failed to create user profile', err);
+    }
+  };
+
+  const updateUserProfile = async (uid, updates) => {
+    try {
+      const userDoc = doc(db, 'users', uid);
+      await updateDoc(userDoc, updates);
+    } catch (err) {
+      console.warn('Failed to update user profile', err);
+    }
+  };
+
+  // Bookings functions
+  const addBooking = async (booking) => {
+    if (!user) return;
+    try {
+      const bookingsCol = collection(db, 'bookings');
+      await addDoc(bookingsCol, { ...booking, userId: user.uid, createdAt: new Date() });
+    } catch (err) {
+      console.warn('Failed to add booking', err);
+    }
+  };
+
+  // Reviews functions
+  const addReview = async (hotelId, review) => {
+    if (!user) return;
+    try {
+      const reviewsCol = collection(db, 'reviews');
+      await addDoc(reviewsCol, { hotelId, ...review, userId: user.uid, createdAt: new Date() });
+    } catch (err) {
+      console.warn('Failed to add review', err);
     }
   };
 
@@ -73,38 +137,69 @@ export function UserProvider({ children }) {
   };
 
   useEffect(() => {
+    checkOnboarding();
     let cartOff = null;
+    let bookingsOff = null;
+    let reviewsOff = null;
     const unsub = onAuthStateChanged(async (fbUser) => {
       if (fbUser) {
         setUser(fbUser);
+        // Cart listener
         if (cartOff) {
           try { cartOff(); } catch (e) {}
           cartOff = null;
         }
-        const cartRef = ref(database, `carts/${fbUser.uid}`);
-        cartOff = onValue(
-          cartRef,
-          async (snapshot) => {
-            const val = snapshot.val();
-            if (val) {
-              setCart(val);
-              persistLocal(val);
-            } else {
-              const local = await loadLocalCart();
-              setCart(local);
-            }
-          },
-          (err) => {
-            console.warn('Cart listener error', err);
+        const cartDoc = doc(db, 'carts', fbUser.uid);
+        cartOff = onSnapshot(cartDoc, async (docSnap) => {
+          const data = docSnap.data();
+          if (data && data.items) {
+            setCart(data.items);
+            persistLocal(data.items);
+          } else {
+            const local = await loadLocalCart();
+            setCart(local);
           }
-        );
+        }, (err) => console.warn('Cart listener error', err));
+
+        // Bookings listener
+        if (bookingsOff) {
+          try { bookingsOff(); } catch (e) {}
+          bookingsOff = null;
+        }
+        const bookingsQuery = query(collection(db, 'bookings'), where('userId', '==', fbUser.uid));
+        bookingsOff = onSnapshot(bookingsQuery, (querySnap) => {
+          const bookingsData = querySnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          setBookings(bookingsData);
+        }, (err) => console.warn('Bookings listener error', err));
+
+        // Reviews listener
+        if (reviewsOff) {
+          try { reviewsOff(); } catch (e) {}
+          reviewsOff = null;
+        }
+        const reviewsQuery = query(collection(db, 'reviews'), where('userId', '==', fbUser.uid));
+        reviewsOff = onSnapshot(reviewsQuery, (querySnap) => {
+          const reviewsData = querySnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          setReviews(reviewsData);
+        }, (err) => console.warn('Reviews listener error', err));
 
         setInitializing(false);
       } else {
         setUser(null);
+        setCart([]);
+        setBookings([]);
+        setReviews([]);
         if (cartOff) {
           try { cartOff(); } catch (e) {}
           cartOff = null;
+        }
+        if (bookingsOff) {
+          try { bookingsOff(); } catch (e) {}
+          bookingsOff = null;
+        }
+        if (reviewsOff) {
+          try { reviewsOff(); } catch (e) {}
+          reviewsOff = null;
         }
         loadLocalCart().then((local) => setCart(local));
         setInitializing(false);
@@ -114,6 +209,12 @@ export function UserProvider({ children }) {
       try { unsub(); } catch (e) {}
       if (cartOff) {
         try { cartOff(); } catch (e) {}
+      }
+      if (bookingsOff) {
+        try { bookingsOff(); } catch (e) {}
+      }
+      if (reviewsOff) {
+        try { reviewsOff(); } catch (e) {}
       }
     };
   }, []);
@@ -130,7 +231,24 @@ export function UserProvider({ children }) {
 
   return (
     <UserContext.Provider
-      value={{ user, initializing, cart, addToCart, setItemQuantity, removeItem, clearCart, logout }}
+      value={{
+        user,
+        initializing,
+        cart,
+        bookings,
+        reviews,
+        onboardingCompleted,
+        addToCart,
+        setItemQuantity,
+        removeItem,
+        clearCart,
+        addBooking,
+        addReview,
+        createUserProfile,
+        updateUserProfile,
+        completeOnboarding,
+        logout
+      }}
     >
       {children}
     </UserContext.Provider>

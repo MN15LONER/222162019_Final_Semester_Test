@@ -1,18 +1,31 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { UserProvider, useUser } from './context/userContext';
+import OnboardingScreen from './screens/OnboardingScreen';
 import LoginScreen from './screens/LoginScreen';
 import RegisterScreen from './screens/RegisterScreen';
-import ProductScreen from './screens/ProductScreen';
-import ProductDetailScreen from './screens/ProductDetailScreen';
-import CartScreen from './screens/CartScreen';
+import ExploreScreen from './screens/ExploreScreen';
+import ProfileScreen from './screens/ProfileScreen';
+import HotelDetailScreen from './screens/HotelDetailScreen';
+import BookingScreen from './screens/BookingScreen';
 import { ActivityIndicator, View } from 'react-native';
 
 const Stack = createStackNavigator();
+const Tab = createBottomTabNavigator();
+
+function MainTabs() {
+  return (
+    <Tab.Navigator>
+      <Tab.Screen name="Explore" component={ExploreScreen} />
+      <Tab.Screen name="Profile" component={ProfileScreen} />
+    </Tab.Navigator>
+  );
+}
 
 function AppNavigator() {
-  const { user, initializing } = useUser();
+  const { user, initializing, onboardingCompleted } = useUser();
 
   if (initializing) {
     return (
@@ -22,30 +35,38 @@ function AppNavigator() {
     );
   }
 
-  return (
-    <NavigationContainer>
-      <Stack.Navigator>
-        {!user ? (
-          <>
-            <Stack.Screen name="Login" component={LoginScreen} options={{ title: 'ShopEZ - Login' }} />
-            <Stack.Screen name="Register" component={RegisterScreen} options={{ title: 'ShopEZ - Register' }} />
-          </>
-        ) : (
-          <>
-            <Stack.Screen name="Products" component={ProductScreen} options={{ title: 'ShopEZ Products' }} />
-            <Stack.Screen name="ProductDetail" component={ProductDetailScreen} options={{ title: 'Product Details' }} />
-            <Stack.Screen name="Cart" component={CartScreen} options={{ title: 'Your Cart' }} />
-          </>
-        )}
+  if (!onboardingCompleted) {
+    return (
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="Onboarding" component={OnboardingScreen} />
       </Stack.Navigator>
-    </NavigationContainer>
+    );
+  }
+
+  if (!user) {
+    return (
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="Login" component={LoginScreen} />
+        <Stack.Screen name="Register" component={RegisterScreen} />
+      </Stack.Navigator>
+    );
+  }
+
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="Main" component={MainTabs} />
+      <Stack.Screen name="HotelDetail" component={HotelDetailScreen} />
+      <Stack.Screen name="Booking" component={BookingScreen} />
+    </Stack.Navigator>
   );
 }
 
 export default function App() {
   return (
     <UserProvider>
-      <AppNavigator />
+      <NavigationContainer>
+        <AppNavigator />
+      </NavigationContainer>
     </UserProvider>
   );
 }
