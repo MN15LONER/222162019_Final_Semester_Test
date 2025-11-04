@@ -15,6 +15,7 @@ export default function LoginScreen({ navigation }) {
     if (!password) {
       Alert.alert('Error', 'Please enter your password');
       return false;
+      //If password is empty, show alert
     }
     if (!email.includes('@')) {
       Alert.alert('Error', 'Please enter a valid email address');
