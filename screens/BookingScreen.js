@@ -11,15 +11,15 @@ import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { useUser } from '../context/userContext';
 
 export default function BookingScreen({ route, navigation }) {
-  const { hotel } = route.params;
+  const { hotel, arrival_date, departure_date } = route.params;
   const { addBooking } = useUser();
-  const [checkInDate, setCheckInDate] = useState(new Date());
-  const [checkOutDate, setCheckOutDate] = useState(new Date(Date.now() + 86400000)); // Tomorrow
+  const [checkInDate, setCheckInDate] = useState(arrival_date && arrival_date !== '' ? new Date(arrival_date) : new Date());
+  const [checkOutDate, setCheckOutDate] = useState(departure_date && departure_date !== '' ? new Date(departure_date) : new Date(Date.now() + 86400000)); // Tomorrow
   const [rooms, setRooms] = useState(1);
   const [showCheckInPicker, setShowCheckInPicker] = useState(false);
   const [showCheckOutPicker, setShowCheckOutPicker] = useState(false);
 
-  const nights = Math.ceil((checkOutDate - checkInDate) / (1000 * 60 * 60 * 24));
+  const nights = checkInDate && checkOutDate ? Math.ceil((checkOutDate - checkInDate) / (1000 * 60 * 60 * 24)) : 1;
   const totalPrice = hotel.price * rooms * Math.max(nights, 1);
 
   const handleConfirmBooking = async () => {

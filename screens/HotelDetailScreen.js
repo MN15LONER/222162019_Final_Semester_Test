@@ -96,7 +96,7 @@ export default function HotelDetailScreen({ route, navigation }) {
       navigation.navigate('Login');
       return;
     }
-    navigation.navigate('Booking', { hotel });
+    navigation.navigate('Booking', { hotel, arrival_date, departure_date });
   };
 
   const handleAddReview = async () => {
